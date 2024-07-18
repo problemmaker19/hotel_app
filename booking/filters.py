@@ -1,4 +1,5 @@
 import django_filters
+from django.db.models import Q
 from booking.models import Room, Reservation
 
 
@@ -9,15 +10,9 @@ class RoomFilterSet(django_filters.FilterSet):
         def filter_daterange(self, queryset, name, value):
             start_date = value.start.date()
             end_date = value.stop.date()
-            reservation_set = Reservation.objects.all().values()
-            filter = []
-            for daterange in reservation_set:
-                start = daterange['timespan'].lower
-                end = daterange['timespan'].upper
-                if start_date > end or end_date < start:
-                    filter.append(daterange['room_id'])
-                result = queryset.filter(id__in=filter)
-            return result
+            reservation_set = Reservation.objects.filter(Q(timespan__startswith__gt=end_date) | Q(timespan__endswith__lt=start_date))
+            queryset = queryset.filter(reservation__in=reservation_set).distinct()
+            return queryset
 
         class Meta:
             model = Room
